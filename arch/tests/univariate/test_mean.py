@@ -35,6 +35,7 @@ from arch.univariate.distribution import (
 )
 from arch.univariate.mean import ARX, HARX, LS, ConstantMean, ZeroMean, arch_model
 from arch.univariate.volatility import (
+    APARCH,
     ARCH,
     EGARCH,
     FIGARCH,
@@ -1073,7 +1074,7 @@ class TestMeanModel(object):
 
 @pytest.mark.parametrize(
     "volatility",
-    [GARCH, EGARCH, RiskMetrics2006, EWMAVariance, HARCH, ConstantVariance],
+    [GARCH, EGARCH, RiskMetrics2006, EWMAVariance, HARCH, ConstantVariance, APARCH],
 )
 def test_backcast(volatility, simulated_data):
     zm = ZeroMean(simulated_data, volatility=volatility())

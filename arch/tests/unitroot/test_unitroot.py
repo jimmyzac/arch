@@ -3,7 +3,7 @@
 from arch.compat.statsmodels import dataset_loader
 
 import os
-from typing import NamedTuple, Optional
+from typing import Literal, NamedTuple, Optional
 import warnings
 
 import numpy as np
@@ -525,7 +525,7 @@ class ZATestResult(NamedTuple):
     stat: float
     pvalue: float
     lags: Optional[int]
-    trend: str
+    trend: Literal["c", "ct", "t"]
     max_lags: Optional[int]
     method: Optional[str]
     actual_lags: int

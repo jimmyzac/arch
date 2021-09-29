@@ -64,6 +64,7 @@ else:
 
 from arch.typing import Literal
 from arch.univariate.volatility import (
+    APARCH,
     ARCH,
     EGARCH,
     FIGARCH,
@@ -1817,7 +1818,7 @@ def arch_model(
         "Constant", "Zero", "LS", "AR", "ARX", "HAR", "HARX", "constant", "zero"
     ] = "Constant",
     lags: Union[None, int, List[int], Int32Array, Int64Array] = 0,
-    vol: Literal["GARCH", "ARCH", "EGARCH", "FIARCH", "HARCH"] = "GARCH",
+    vol: Literal["GARCH", "ARCH", "EGARCH", "FIARCH", "HARCH", "APARCH"] = "GARCH",
     p: Union[int, List[int]] = 1,
     o: int = 0,
     q: int = 1,
@@ -1846,14 +1847,14 @@ def arch_model(
         Exogenous regressors.  Ignored if model does not permit exogenous
         regressors.
     mean : str, optional
-        Name of the mean model.  Currently supported options are: 'Constant',
-        'Zero', 'LS', 'AR', 'ARX', 'HAR' and  'HARX'
+        Name of the mean model.  Currently supported options are: "Constant",
+        "Zero", "LS", "AR", "ARX", "HAR" and  "HARX"
     lags : int or list (int), optional
         Either a scalar integer value indicating lag length or a list of
         integers specifying lag locations.
     vol : str, optional
         Name of the volatility model.  Currently supported options are:
-        'GARCH' (default), 'ARCH', 'EGARCH', 'FIARCH' and 'HARCH'
+        "GARCH" (default), "ARCH", "EGARCH", "FIARCH", "APARCH", and "HARCH"
     p : int, optional
         Lag order of the symmetric innovation
     o : int, optional
@@ -1865,15 +1866,15 @@ def arch_model(
     dist : int, optional
         Name of the error distribution.  Currently supported options are:
 
-            * Normal: 'normal', 'gaussian' (default)
-            * Students's t: 't', 'studentst'
-            * Skewed Student's t: 'skewstudent', 'skewt'
-            * Generalized Error Distribution: 'ged', 'generalized error"
+            * Normal: "normal", "gaussian" (default)
+            * Students's t: "t", "studentst"
+            * Skewed Student's t: "skewstudent", "skewt"
+            * Generalized Error Distribution: "ged", "generalized error"
 
     hold_back : int
         Number of observations at the start of the sample to exclude when
-        estimating model parameters.  Used when comparing models with different
-        lag lengths to estimate on the common sample.
+        estimating model parameters.  Used when comparing models with
+        different lag lengths to estimate on the common sample.
     rescale : bool
         Flag indicating whether to automatically rescale data if the scale
         of the data is likely to produce convergence issues when estimating
@@ -1890,8 +1891,8 @@ def arch_model(
     --------
     >>> import datetime as dt
     >>> import pandas_datareader.data as web
-    >>> djia = web.get_data_fred('DJIA')
-    >>> returns = 100 * djia['DJIA'].pct_change().dropna()
+    >>> djia = web.get_data_fred("DJIA")
+    >>> returns = 100 * djia["DJIA"].pct_change().dropna()
 
     A basic GARCH(1,1) with a constant mean can be constructed using only
     the return data
@@ -1901,23 +1902,24 @@ def arch_model(
 
     Alternative mean and volatility processes can be directly specified
 
-    >>> am = arch_model(returns, mean='AR', lags=2, vol='harch', p=[1, 5, 22])
+    >>> am = arch_model(returns, mean="AR", lags=2, vol="HARCH",
+    ...                 p=[1, 5, 22])
 
     This example demonstrates the construction of a zero mean process
     with a TARCH volatility process and Student t error distribution
 
-    >>> am = arch_model(returns, mean='zero', p=1, o=1, q=1,
-    ...                 power=1.0, dist='StudentsT')
+    >>> am = arch_model(returns, mean="Zero", p=1, o=1, q=1,
+    ...                 power=1.0, dist="StudentsT")
 
     Notes
     -----
-    Input that are not relevant for a particular specification, such as `lags`
-    when `mean='zero'`, are silently ignored.
+    Inputs that are not relevant for a particular specification, such as `lags`
+    when `mean="Zero"`, are silently ignored.
     """
     am: ARCHModel
 
     known_mean = ("zero", "constant", "harx", "har", "ar", "arx", "ls")
-    known_vol = ("arch", "figarch", "garch", "harch", "constant", "egarch")
+    known_vol = ("arch", "figarch", "garch", "harch", "constant", "egarch", "aparch")
     known_dist = (
         "normal",
         "gaussian",
@@ -1953,7 +1955,9 @@ def arch_model(
     else:  # mean == "zero"
         am = ZeroMean(y, hold_back=hold_back, rescale=rescale)
 
-    if vol in ("arch", "garch", "figarch", "egarch") and not isinstance(p, int):
+    if vol in ("arch", "garch", "figarch", "egarch", "aparch") and not isinstance(
+        p, int
+    ):
         raise TypeError(
             "p must be a scalar int for all volatility processes except HARCH."
         )
@@ -1972,6 +1976,9 @@ def arch_model(
     elif vol_model == "egarch":
         assert isinstance(p, int)
         v = EGARCH(p=p, o=o, q=q)
+    elif vol_model == "aparch":
+        assert isinstance(p, int)
+        v = APARCH(p=p, o=o, q=q)
     else:  # vol == 'harch'
         v = HARCH(lags=p)
 
